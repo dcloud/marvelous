@@ -42,13 +42,13 @@ class Marvel(object):
                 parts += (subpath,)
             endpoint = '/'.join(parts)
 
-            def api_object_endpoint(object_id, **filters):
+            def api_object_id_endpoint(object_id, **filters):
                 return self._get(endpoint.format(object_id), **filters)
 
             def api_basic_endpoint(**filters):
                 return self._get(endpoint, **filters)
 
-            endpoint_func = api_object_endpoint if requires_id else api_basic_endpoint
+            endpoint_func = api_object_id_endpoint if requires_id else api_basic_endpoint
 
             if subpath:
                 endpoint_func.__doc__ = "API endpoint for `{}`, filtered by `{}`".format(subpath, path)
@@ -68,12 +68,12 @@ class Marvel(object):
         )
 
         for path, subset in endpoints:
-            subset += (None,)
+            setattr(self, path, make_endpoint(path))
             singular_endpoint = singular_for_path(path)
             setattr(self, singular_endpoint, make_endpoint(path, requires_id=True))
             for subpath in subset:
-                method = '{}_{}'.format(path, subpath) if subpath else path
-                setattr(self, method, make_endpoint(path, subpath))
+                method = '{}_{}'.format(path, subpath)
+                setattr(self, method, make_endpoint(path, subpath, requires_id=True))
 
         def nowtimestamp():
             return datetime.utcnow().strftime('%f')
