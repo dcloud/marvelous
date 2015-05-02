@@ -27,7 +27,6 @@ class Marvel(object):
             endpoint = '/'.join(parts)
 
             def api_object_endpoint(object_id, params=None):
-                import ipdb; ipdb.set_trace()
                 return self._get(endpoint.format(object_id), params=params)
 
             def api_basic_endpoint(params=None):
