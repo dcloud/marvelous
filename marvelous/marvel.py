@@ -86,7 +86,7 @@ class Marvel(object):
     def _get(self, endpoint, single_result=False, **filters):
         params = filters or {}
         if not (self.private_key or self.public_key):
-            raise Exception('Both `private_key` and `public_key` must be set')
+            raise APIError('Both `private_key` and `public_key` must be set')
         else:
             ts = self._create_ts_string()
             h = hashlib.md5(bytes(ts, 'utf-8'))
