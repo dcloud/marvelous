@@ -7,8 +7,6 @@ from marvelous.utils import ResponseDict, ResponseList
 from marvelous.exceptions import APIError
 from marvelous.__init__ import __version__
 
-from IPython.core.debugger import Tracer
-
 
 class Marvel(object):
     """Marvel Comics API bindings"""
