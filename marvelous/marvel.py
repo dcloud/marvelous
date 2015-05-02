@@ -18,6 +18,47 @@ class Marvel(object):
         self.private_key = private_key
         self.public_key = public_key
 
+        def make_endpoint(path, subpath=None, requires_id=False):
+            parts = (path,)
+            if requires_id or subpath:
+                parts += ('{}',)
+            if subpath:
+                parts += (subpath,)
+            endpoint = '/'.join(parts)
+
+            def api_object_endpoint(object_id, params=None):
+                import ipdb; ipdb.set_trace()
+                return self._get(endpoint.format(object_id), params=params)
+
+            def api_basic_endpoint(params=None):
+                return self._get(endpoint, params=params)
+
+            endpoint_func = api_object_endpoint if requires_id else api_basic_endpoint
+
+            if subpath:
+                endpoint_func.__doc__ = "API endpoint for `{}`, filtered by `{}`".format(subpath, path)
+            else:
+                endpoint_func.__doc__ = "API endpoint for `{}`.".format(path)
+            if requires_id:
+                endpoint_func.__doc__ += " Requires an object id."
+            return endpoint_func
+
+        endpoints = (
+            ('characters', ('comics', 'events', 'series', 'stories')),
+            ('comics', ('characters', 'creators', 'events', 'stories')),
+            ('creators', ('comics', 'events', 'series', 'stories')),
+            ('events', ('characters', 'comics', 'creators', 'series', 'stories')),
+            ('series', ('characters', 'comics', 'creators', 'events', 'stories')),
+            ('stories', ('characters', 'comics', 'creators', 'events', 'series'))
+        )
+        for path, subset in endpoints:
+            subset += (None,)
+            with_id_attr = '{}_with_id'.format(path)
+            setattr(self, with_id_attr, make_endpoint(path, requires_id=True))
+            for subpath in subset:
+                method = '{}_{}'.format(path, subpath) if subpath else path
+                setattr(self, method, make_endpoint(path, subpath))
+
         def nowtimestamp():
             return datetime.utcnow().strftime('%f')
         self._create_ts_string = nowtimestamp
@@ -58,9 +99,3 @@ class Marvel(object):
                 return ResponseDict(data=raw_results[0], meta=meta_info)
         else:
             raise Exception('Unable to unwrap JSON response.')
-
-    def character(self, character_id, params=None):
-        return self._get('character/{}'.format(character_id), params=params)
-
-    def characters(self, params=None):
-        return self._get('characters', params=params)
