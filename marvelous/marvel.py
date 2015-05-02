@@ -33,6 +33,7 @@ class Marvel(object):
             return singulars.get(path, path.rstrip('s'))
 
         def make_endpoint(path, subpath=None, requires_id=False):
+            expect_one = requires_id and subpath is None
             parts = (path,)
             if requires_id or subpath:
                 parts += ('{}',)
@@ -41,10 +42,10 @@ class Marvel(object):
             endpoint = '/'.join(parts)
 
             def api_object_id_endpoint(object_id, **filters):
-                return self._get(endpoint.format(object_id), **filters)
+                return self._get(endpoint.format(object_id), single_result=expect_one, **filters)
 
             def api_basic_endpoint(**filters):
-                return self._get(endpoint, **filters)
+                return self._get(endpoint, single_result=expect_one, **filters)
 
             endpoint_func = api_object_id_endpoint if requires_id else api_basic_endpoint
 
@@ -82,7 +83,7 @@ class Marvel(object):
         url_parts = (Marvel.scheme, Marvel.domain, url_path, '', '')
         return urlunsplit(url_parts)
 
-    def _get(self, endpoint, **filters):
+    def _get(self, endpoint, single_result=False, **filters):
         params = filters or {}
         if not (self.private_key or self.public_key):
             raise Exception('Both `private_key` and `public_key` must be set')
@@ -99,7 +100,7 @@ class Marvel(object):
             api_url = self._generate_url(endpoint)
             response = requests.get(api_url, params=params)
             if response.ok:
-                return self._unwrap_response_json(response.json())
+                return self._unwrap_response_json(response.json(), as_dict=single_result)
             else:
                 try:
                     error_obj = response.json()
@@ -108,13 +109,17 @@ class Marvel(object):
                 except ValueError:
                     raise requests.exceptions.HTTPError()
 
-    def _unwrap_response_json(self, response_json):
+    def _unwrap_response_json(self, response_json, as_dict=False):
         if 'data' in response_json and 'results' in response_json['data']:
             raw_results = response_json['data'].pop('results')
             meta_info = response_json.copy()
-            if len(raw_results) > 1:
-                return ResponseList(data=raw_results, meta=meta_info)
+            # from IPython.core.debugger import Tracer; debug_here = Tracer()
+            if raw_results:
+                if as_dict and len(raw_results) == 1:
+                    return ResponseDict(data=raw_results[0] if raw_results else None, meta=meta_info)
+                else:
+                    return ResponseList(data=raw_results, meta=meta_info)
             else:
-                return ResponseDict(data=raw_results[0], meta=meta_info)
+                return None
         else:
             raise Exception('Unable to unwrap JSON response.')
