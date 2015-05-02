@@ -4,6 +4,10 @@ import hashlib
 from datetime import datetime
 
 from marvelous.utils import ResponseDict, ResponseList
+from marvelous.exceptions import APIError
+from marvelous.__init__ import __version__
+
+from IPython.core.debugger import Tracer
 
 
 class Marvel(object):
@@ -17,6 +21,18 @@ class Marvel(object):
         super(Marvel, self).__init__()
         self.private_key = private_key
         self.public_key = public_key
+        self._session = requests.Session
+        self._session.headers = {
+            'Accept-Encoding': 'gzip',
+            'User-Agent': 'Marvelous Python Client/{}'.format(__version__)
+        }
+
+        def singular_for_path(path):
+            singulars = dict((
+                ('series', 'series_with_id'),
+                ('stories', 'story'),
+            ))
+            return singulars.get(path, path.rstrip('s'))
 
         def make_endpoint(path, subpath=None, requires_id=False):
             parts = (path,)
@@ -26,18 +42,18 @@ class Marvel(object):
                 parts += (subpath,)
             endpoint = '/'.join(parts)
 
-            def api_object_endpoint(object_id, params=None):
-                return self._get(endpoint.format(object_id), params=params)
+            def api_object_endpoint(object_id, **filters):
+                return self._get(endpoint.format(object_id), **filters)
 
-            def api_basic_endpoint(params=None):
-                return self._get(endpoint, params=params)
+            def api_basic_endpoint(**filters):
+                return self._get(endpoint, **filters)
 
             endpoint_func = api_object_endpoint if requires_id else api_basic_endpoint
 
             if subpath:
                 endpoint_func.__doc__ = "API endpoint for `{}`, filtered by `{}`".format(subpath, path)
             else:
-                endpoint_func.__doc__ = "API endpoint for `{}`.".format(path)
+                endpoint_func.__doc__ = "API endpoint for `{}`.".format(singular_for_path(path))
             if requires_id:
                 endpoint_func.__doc__ += " Requires an object id."
             return endpoint_func
@@ -50,10 +66,11 @@ class Marvel(object):
             ('series', ('characters', 'comics', 'creators', 'events', 'stories')),
             ('stories', ('characters', 'comics', 'creators', 'events', 'series'))
         )
+
         for path, subset in endpoints:
             subset += (None,)
-            with_id_attr = '{}_with_id'.format(path)
-            setattr(self, with_id_attr, make_endpoint(path, requires_id=True))
+            singular_endpoint = singular_for_path(path)
+            setattr(self, singular_endpoint, make_endpoint(path, requires_id=True))
             for subpath in subset:
                 method = '{}_{}'.format(path, subpath) if subpath else path
                 setattr(self, method, make_endpoint(path, subpath))
@@ -67,8 +84,8 @@ class Marvel(object):
         url_parts = (Marvel.scheme, Marvel.domain, url_path, '', '')
         return urlunsplit(url_parts)
 
-    def _get(self, endpoint, params=None):
-        params = params or {}
+    def _get(self, endpoint, **filters):
+        params = filters or {}
         if not (self.private_key or self.public_key):
             raise Exception('Both `private_key` and `public_key` must be set')
         else:
@@ -86,7 +103,12 @@ class Marvel(object):
             if response.ok:
                 return self._unwrap_response_json(response.json())
             else:
-                raise requests.exceptions.HTTPError()
+                try:
+                    error_obj = response.json()
+                    error_message = error_obj.get('status')
+                    raise APIError(error_message)
+                except ValueError:
+                    raise requests.exceptions.HTTPError()
 
     def _unwrap_response_json(self, response_json):
         if 'data' in response_json and 'results' in response_json['data']:
