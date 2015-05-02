@@ -19,7 +19,7 @@ class Marvel(object):
         super(Marvel, self).__init__()
         self.private_key = private_key
         self.public_key = public_key
-        self._session = requests.Session
+        self._session = requests.Session()
         self._session.headers = {
             'Accept-Encoding': 'gzip',
             'User-Agent': 'Marvelous Python Client/{}'.format(__version__)
@@ -98,7 +98,7 @@ class Marvel(object):
                     'apikey': self.public_key
             })
             api_url = self._generate_url(endpoint)
-            response = requests.get(api_url, params=params)
+            response = self._session.get(api_url, params=params)
             if response.ok:
                 return self._unwrap_response_json(response.json(), as_dict=single_result)
             else:
@@ -106,8 +106,8 @@ class Marvel(object):
                     error_obj = response.json()
                     error_message = error_obj.get('status')
                     raise APIError(error_message)
-                except ValueError:
-                    raise requests.exceptions.HTTPError()
+                except ValueError as e:
+                    raise APIError(e)
 
     def _unwrap_response_json(self, response_json, as_dict=False):
         if 'data' in response_json and 'results' in response_json['data']:
@@ -123,3 +123,12 @@ class Marvel(object):
                 return None
         else:
             raise Exception('Unable to unwrap JSON response.')
+
+    def docs(self):
+        url_parts = (Marvel.scheme, Marvel.domain, 'docs/public', '', '')
+        url = urlunsplit(url_parts)
+        response = self._session.get(url)
+        try:
+            return response.json()
+        except ValueError as e:
+            raise APIError(e)
