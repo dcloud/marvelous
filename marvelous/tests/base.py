@@ -15,6 +15,6 @@ class MarvelTests(unittest.TestCase):
         self.doop = 1009279
         self.bendis = 24
         self.story = 15
-        self.ultron_comic = 44708
+        self.ultron_comic = 45908
         self.age_of_ultron_event = 314
         self.avengers_series = 1991

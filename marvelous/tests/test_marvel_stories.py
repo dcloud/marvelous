@@ -1,7 +1,7 @@
-import unittest
+from marvelous.tests.base import MarvelTests
 
 
-class TestMarvelStories(unittest.TestCase):
+class TestMarvelStories(MarvelTests):
 
     def test_story_by_id(self):
         result = self.api.story(self.story)
