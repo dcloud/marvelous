@@ -17,10 +17,6 @@ with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
 
 setup(
     name='marvelous',
-
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
-    # the version across setup.py and the project code, see
-    # https://packaging.python.org/en/latest/single_source_version.html
     version=marvelous.__version__,
 
     description='Python bindings for Marvel Comics API',
@@ -28,14 +24,11 @@ setup(
 
     url='https://github.com/dcloud/marvelous',
 
-    # Author details
     author=marvelous.__author__,
     author_email='daniel+marvelous@danielcloud.org',
 
-    # Choose your license
     license=marvelous.__license__,
 
-    # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         'Development Status :: 3 - Alpha',
 
@@ -50,20 +43,9 @@ setup(
     # What does your project relate to?
     keywords='marvel comics api',
 
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages().
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     install_requires=['requests'],
-
-    # List additional groups of dependencies here (e.g. development
-    # dependencies). You can install these using the following syntax,
-    # for example:
-    # $ pip install -e .[dev,test]
-    # extras_require={
-    #     'dev': ['check-manifest'],
-    #     'test': ['coverage'],
-    # },
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
