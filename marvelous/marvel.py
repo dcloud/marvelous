@@ -113,8 +113,7 @@ class Marvel(object):
         if 'data' in response_json and 'results' in response_json['data']:
             raw_results = response_json['data'].pop('results')
             meta_info = response_json.copy()
-            # from IPython.core.debugger import Tracer; debug_here = Tracer()
-            if raw_results:
+            if raw_results is not None:
                 if as_dict and len(raw_results) == 1:
                     return ResponseDict(data=raw_results[0] if raw_results else None, meta=meta_info)
                 else:
